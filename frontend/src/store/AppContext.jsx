@@ -186,6 +186,11 @@ export function AppProvider({ children }) {
       await commentService.remove(id);
       showAlert("success", "Comment removed.");
     });
+  const toggleCommentReaction = (id, emoji) =>
+    guarded(async () => {
+      const comment = await commentService.toggleReaction(id, emoji);
+      return comment;
+    }, { silent: true });
 
   const loadNotifications = () =>
     guarded(async () => {
@@ -226,6 +231,13 @@ export function AppProvider({ children }) {
       await loadTags();
       showAlert("success", "Tag created.");
       return tag;
+    });
+
+  const deleteTag = (id) =>
+    guarded(async () => {
+      await tagService.remove(id);
+      await loadTags();
+      showAlert("success", "Tag removed.");
     });
 
   const loadActivities = (params) => guarded(async () => activityService.list(params), { silent: true });
@@ -294,12 +306,14 @@ export function AppProvider({ children }) {
       createComment,
       updateComment,
       deleteComment,
+      toggleCommentReaction,
       loadNotifications,
       markNotificationRead,
       markAllNotificationsRead,
       loadUsers,
       loadTags,
       createTag,
+      deleteTag,
       loadActivities,
       saveUser,
       removeUser,

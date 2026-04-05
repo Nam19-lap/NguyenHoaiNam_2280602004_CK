@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import Modal from "../components/Modal.jsx";
 import TaskCard from "../components/TaskCard.jsx";
 import { useAppContext } from "../store/AppContext.jsx";
 import { useAuth } from "../hooks/useAuth.js";
-import { formatDate } from "../utils/formatters.js";
+import { formatDate, getTagTextColor } from "../utils/formatters.js";
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const {
     loadProject,
@@ -18,6 +19,7 @@ export default function ProjectDetailPage() {
     loadUsers,
     loadTags,
     createTag,
+    deleteTag,
     loadActivities,
     createTask,
     updateTask,
@@ -109,14 +111,18 @@ export default function ProjectDetailPage() {
 
   const handleDeleteProject = async () => {
     await deleteProject(projectId);
-    navigate("/projects");
+    navigate(location.pathname.startsWith("/admin") ? "/admin/projects" : "/projects");
   };
 
   const handleCreateTag = async (event) => {
     event.preventDefault();
     await createTag(tagForm);
     setTagForm({ name: "", color: "#0f172a" });
-    setTagModalOpen(false);
+  };
+
+  const handleDeleteTag = async (tagId) => {
+    await deleteTag(tagId);
+    await refreshProject();
   };
 
   if (!project) {
@@ -316,23 +322,66 @@ export default function ProjectDetailPage() {
       </Modal>
 
       <Modal onClose={() => setTagModalOpen(false)} open={tagModalOpen} title="Create tag">
-        <form className="space-y-4" onSubmit={handleCreateTag}>
-          <input
-            className="input"
-            onChange={(event) => setTagForm({ ...tagForm, name: event.target.value })}
-            placeholder="Tag name"
-            value={tagForm.name}
-          />
-          <input
-            className="input h-12"
-            onChange={(event) => setTagForm({ ...tagForm, color: event.target.value })}
-            type="color"
-            value={tagForm.color}
-          />
-          <button className="btn-primary" type="submit">
-            Create tag
-          </button>
-        </form>
+        <div className="space-y-6">
+          <form className="space-y-4" onSubmit={handleCreateTag}>
+            <input
+              className="input"
+              onChange={(event) => setTagForm({ ...tagForm, name: event.target.value })}
+              placeholder="Tag name"
+              value={tagForm.name}
+            />
+            <div className="flex items-center gap-3">
+              <input
+                className="h-12 w-16 cursor-pointer rounded-2xl border border-slate-200 bg-white p-2"
+                onChange={(event) => setTagForm({ ...tagForm, color: event.target.value })}
+                type="color"
+                value={tagForm.color}
+              />
+              <span
+                className="badge border border-slate-200/30"
+                style={{
+                  backgroundColor: tagForm.color,
+                  color: getTagTextColor(tagForm.color)
+                }}
+              >
+                {tagForm.name.trim() || "Preview tag"}
+              </span>
+            </div>
+            <button className="btn-primary" type="submit">
+              Create tag
+            </button>
+          </form>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Existing tags</p>
+            <div className="mt-4 space-y-3">
+              {tags.map((tag) => (
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3" key={tag._id}>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="badge border border-slate-200/30"
+                      style={{
+                        backgroundColor: tag.color || "#0f172a",
+                        color: getTagTextColor(tag.color || "#0f172a")
+                      }}
+                    >
+                      {tag.name || "Untitled tag"}
+                    </span>
+                    <span className="text-xs text-slate-500">{tag.color || "#0f172a"}</span>
+                  </div>
+                  <button
+                    className="rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 shadow-md transition hover:shadow-lg"
+                    onClick={() => handleDeleteTag(tag._id)}
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+              {!tags.length ? <p className="text-sm text-slate-500">No tags created yet.</p> : null}
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );

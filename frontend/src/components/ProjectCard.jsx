@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-export default function ProjectCard({ project }) {
+export default function ProjectCard({ project, actionLabel = "View", actionTo, onAction }) {
   return (
     <article className="card p-5">
       <div className="flex items-start justify-between gap-3">
@@ -19,9 +19,15 @@ export default function ProjectCard({ project }) {
             </span>
           ))}
         </div>
-        <Link className="btn-secondary" to={`/projects/${project._id}`}>
-          View
-        </Link>
+        {onAction ? (
+          <button className="btn-secondary" onClick={() => onAction(project)} type="button">
+            {actionLabel}
+          </button>
+        ) : (
+          <Link className="btn-secondary" to={actionTo || `/projects/${project._id}`}>
+            {actionLabel}
+          </Link>
+        )}
       </div>
     </article>
   );

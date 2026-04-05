@@ -43,6 +43,7 @@ const getProjectById = asyncHandler(async (req, res) => {
 
   const tasks = await Task.find({ projectId: project._id, isDeleted: false })
     .populate("assignedTo", "name email avatar role")
+    .populate("tags", "name color")
     .populate("createdBy", "name email avatar role")
     .sort({ dueDate: 1, createdAt: -1 });
 

@@ -10,8 +10,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await login(form);
-    navigate("/");
+    const session = await login(form);
+    navigate(session.user?.role === "admin" ? "/admin" : "/");
   };
 
   return (

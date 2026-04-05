@@ -13,6 +13,11 @@ const toFormData = (payload = {}) => {
       return;
     }
 
+    if (Array.isArray(value)) {
+      value.forEach((item) => formData.append(key, item));
+      return;
+    }
+
     formData.append(key, value);
   });
 
@@ -23,5 +28,6 @@ export const commentService = {
   listByTask: async (taskId) => (await api.get(`/comments/task/${taskId}`)).data.data,
   create: async (payload) => (await api.post("/comments", toFormData(payload))).data.data,
   update: async (id, payload) => (await api.patch(`/comments/${id}`, toFormData(payload))).data.data,
+  toggleReaction: async (id, emoji) => (await api.patch(`/comments/${id}/reactions`, { emoji })).data.data,
   remove: async (id) => (await api.delete(`/comments/${id}`)).data
 };

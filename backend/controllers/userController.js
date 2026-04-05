@@ -39,7 +39,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     req.user._id,
     {
       name: req.body.name ?? req.user.name,
-      avatar: req.body.avatar ?? req.user.avatar
+      avatar: req.file ? `/uploads/${req.file.filename}` : req.body.avatar ?? req.user.avatar
     },
     { new: true }
   ).select("-passwordHash");

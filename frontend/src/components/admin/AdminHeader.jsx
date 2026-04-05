@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAppContext } from "../../store/AppContext.jsx";
+import { resolveMediaUrl } from "../../utils/media.js";
 
 export default function AdminHeader() {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function AdminHeader() {
           </Link>
           <div className="flex items-center gap-3 rounded-xl bg-slate-100 px-4 py-2 text-sm">
             {auth.user?.avatar ? (
-              <img alt="Admin avatar" className="h-10 w-10 rounded-xl object-cover" src={auth.user.avatar} />
+              <img alt="Admin avatar" className="h-10 w-10 rounded-xl object-cover" src={resolveMediaUrl(auth.user.avatar)} />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 font-black text-white">
                 {(auth.user?.name || "A").slice(0, 1).toUpperCase()}

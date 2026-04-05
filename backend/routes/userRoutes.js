@@ -9,12 +9,13 @@ const {
   updateUser,
   softDeleteUser
 } = require("../controllers/userController");
+const { upload } = require("../utils/upload");
 
 const router = express.Router();
 
 router.use(authenticate);
 router.get("/me", getProfile);
-router.patch("/me", updateProfile);
+router.patch("/me", upload.single("avatarFile"), updateProfile);
 router.patch("/me/password", changePassword);
 router.get("/", authorizeRoles("admin"), listUsers);
 router.get("/:id", authorizeRoles("admin"), getUserById);

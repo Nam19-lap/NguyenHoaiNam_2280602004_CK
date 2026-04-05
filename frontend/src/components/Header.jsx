@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { useAppContext } from "../store/AppContext.jsx";
+import { resolveMediaUrl } from "../utils/media.js";
 
 export default function Header() {
   const { auth, notifications, logout } = useAppContext();
@@ -17,7 +18,7 @@ export default function Header() {
         </Link>
         <div className="flex items-center gap-3 rounded-2xl bg-slate-950 px-4 py-2 text-sm text-white">
           {auth.user?.avatar ? (
-            <img alt="User avatar" className="h-10 w-10 rounded-xl object-cover" src={auth.user.avatar} />
+            <img alt="User avatar" className="h-10 w-10 rounded-xl object-cover" src={resolveMediaUrl(auth.user.avatar)} />
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 font-black text-white">
               {(auth.user?.name || "U").slice(0, 1).toUpperCase()}

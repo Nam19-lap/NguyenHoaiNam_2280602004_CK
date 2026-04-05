@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import CommentCard from "../components/CommentCard.jsx";
+import { useAuth } from "../hooks/useAuth.js";
 import { useAppContext } from "../store/AppContext.jsx";
 import { formatDate, statusTone } from "../utils/formatters.js";
 
 export default function TaskDetailPage() {
   const { taskId } = useParams();
-  const { loadTask, updateTask, loadComments, createComment } = useAppContext();
+  const { user } = useAuth();
+  const { loadTask, updateTask, loadComments, createComment, toggleCommentReaction } = useAppContext();
   const [task, setTask] = useState(null);
   const [comments, setComments] = useState([]);
-  const [commentForm, setCommentForm] = useState({ content: "", files: [] });
+  const [commentForm, setCommentForm] = useState({ content: "", files: [], mentionedUserIds: [] });
 
   const refresh = async () => {
     const [taskData, commentData] = await Promise.all([loadTask(taskId), loadComments(taskId)]);
@@ -32,11 +34,39 @@ export default function TaskDetailPage() {
     await createComment({
       taskId,
       content: commentForm.content,
-      files: commentForm.files
+      files: commentForm.files,
+      mentionedUserIds: commentForm.mentionedUserIds
     });
-    setCommentForm({ content: "", files: [] });
+    setCommentForm({ content: "", files: [], mentionedUserIds: [] });
     await refresh();
   };
+
+  const handleMention = (mentionUser) => {
+    const mentionToken = `@${mentionUser.name}`;
+    setCommentForm((current) => ({
+      ...current,
+      content: current.content.includes(mentionToken) ? current.content : `${current.content}${current.content ? " " : ""}${mentionToken} `,
+      mentionedUserIds: current.mentionedUserIds.includes(mentionUser._id)
+        ? current.mentionedUserIds
+        : [...current.mentionedUserIds, mentionUser._id]
+    }));
+  };
+
+  const handleToggleReaction = async (commentId, emoji) => {
+    await toggleCommentReaction(commentId, emoji);
+    await refresh();
+  };
+
+  const mentionableUsers = useMemo(() => {
+    const people = [task?.createdBy, ...(task?.assignedTo || [])].filter(Boolean);
+    const uniquePeople = new Map();
+    people.forEach((person) => {
+      if (!uniquePeople.has(person._id)) {
+        uniquePeople.set(person._id, person);
+      }
+    });
+    return [...uniquePeople.values()];
+  }, [task]);
 
   if (!task) {
     return <p className="text-sm text-slate-500">Loading task...</p>;
@@ -110,9 +140,19 @@ export default function TaskDetailPage() {
           <textarea
             className="input min-h-28"
             onChange={(event) => setCommentForm({ ...commentForm, content: event.target.value })}
-            placeholder="Add a comment"
+            placeholder="Add a comment and mention teammates with @name"
             value={commentForm.content}
           />
+          <div className="rounded-3xl bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Mention teammates</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {mentionableUsers.map((mentionUser) => (
+                <button className="btn-secondary px-3 py-2" key={mentionUser._id} onClick={() => handleMention(mentionUser)} type="button">
+                  @{mentionUser.name}
+                </button>
+              ))}
+            </div>
+          </div>
           <input className="input" multiple onChange={(event) => setCommentForm({ ...commentForm, files: event.target.files })} type="file" />
           <button className="btn-primary" type="submit">
             Post comment
@@ -120,7 +160,7 @@ export default function TaskDetailPage() {
         </form>
         <div className="mt-6 space-y-4">
           {comments.map((comment) => (
-            <CommentCard comment={comment} key={comment._id} />
+            <CommentCard comment={comment} currentUserId={user?._id} key={comment._id} onToggleReaction={handleToggleReaction} />
           ))}
           {!comments.length ? <p className="text-sm text-slate-500">No comments yet.</p> : null}
         </div>

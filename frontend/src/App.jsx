@@ -21,12 +21,13 @@ import UsersPage from "./pages/UsersPage.jsx";
 import { useAuth } from "./hooks/useAuth.js";
 
 function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const defaultHome = user?.role === "admin" ? "/admin" : "/";
 
   return (
     <Routes>
-      <Route path="/login" element={isAuthenticated ? <Navigate replace to="/" /> : <LoginPage />} />
-      <Route path="/register" element={isAuthenticated ? <Navigate replace to="/" /> : <RegisterPage />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate replace to={defaultHome} /> : <LoginPage />} />
+      <Route path="/register" element={isAuthenticated ? <Navigate replace to={defaultHome} /> : <RegisterPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
@@ -44,8 +45,10 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/projects" element={<AdminProjectsPage />} />
           <Route path="/admin/projects/create" element={<AdminProjectCreatePage />} />
+          <Route path="/admin/projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="/admin/tasks" element={<AdminTasksPage />} />
           <Route path="/admin/tasks/create" element={<AdminTaskCreatePage />} />
+          <Route path="/admin/tasks/:taskId" element={<TaskDetailPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
         </Route>
         <Route element={<AppLayout />}>
@@ -53,7 +56,7 @@ function App() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate replace to={isAuthenticated ? "/" : "/login"} />} />
+      <Route path="*" element={<Navigate replace to={isAuthenticated ? defaultHome : "/login"} />} />
     </Routes>
   );
 }

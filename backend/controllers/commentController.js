@@ -7,7 +7,38 @@ const { logActivity } = require("../utils/activityLogger");
 const { ensureTaskAccess } = require("../utils/permissions");
 const { mapUploadedFiles } = require("../utils/upload");
 
-const commentPopulate = [{ path: "userId", select: "name email avatar role" }];
+const commentPopulate = [
+  { path: "userId", select: "name email avatar role" },
+  { path: "mentions", select: "name email avatar role" },
+  { path: "reactions.userId", select: "name email avatar role" }
+];
+const supportedReactions = new Set(["👍", "❤️", "🎉", "👀"]);
+
+const normalizeIdList = (value) => {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => normalizeIdList(item));
+  }
+
+  if (typeof value !== "string") {
+    return value ? [String(value)] : [];
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch (_error) {
+      return [];
+    }
+  }
+
+  return [trimmed];
+};
 
 const listCommentsByTask = asyncHandler(async (req, res) => {
   await ensureTaskAccess(req.user, req.params.taskId);
@@ -27,11 +58,15 @@ const listCommentsByTask = asyncHandler(async (req, res) => {
 
 const createComment = asyncHandler(async (req, res) => {
   const task = await ensureTaskAccess(req.user, req.body.taskId);
+  const mentionIds = [...new Set(normalizeIdList(req.body.mentionedUserIds))].filter(
+    (userId) => userId !== req.user._id.toString()
+  );
 
   const comment = await Comment.create({
     content: req.body.content,
     taskId: req.body.taskId,
     userId: req.user._id,
+    mentions: mentionIds,
     files: mapUploadedFiles(req)
   });
 
@@ -49,6 +84,18 @@ const createComment = asyncHandler(async (req, res) => {
       [...recipients].map((userId) => ({
         userId,
         message: `${req.user.name} commented on task "${fullTask.title}".`,
+        type: "comment",
+        entityId: fullTask._id
+      }))
+    );
+  }
+
+  const mentionRecipients = mentionIds.filter((userId) => !recipients.has(userId));
+  if (mentionRecipients.length) {
+    await Notification.insertMany(
+      mentionRecipients.map((userId) => ({
+        userId,
+        message: `${req.user.name} mentioned you in a comment on task "${fullTask.title}".`,
         type: "comment",
         entityId: fullTask._id
       }))
@@ -86,6 +133,11 @@ const updateComment = asyncHandler(async (req, res) => {
   }
 
   comment.content = req.body.content ?? comment.content;
+  if (req.body.mentionedUserIds !== undefined) {
+    comment.mentions = [...new Set(normalizeIdList(req.body.mentionedUserIds))].filter(
+      (userId) => userId !== req.user._id.toString()
+    );
+  }
   const incomingFiles = mapUploadedFiles(req);
   if (incomingFiles.length) {
     comment.files = [...comment.files, ...incomingFiles];
@@ -108,6 +160,40 @@ const updateComment = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: "Comment updated successfully.",
+    data: comment
+  });
+});
+
+const toggleReaction = asyncHandler(async (req, res) => {
+  const comment = await Comment.findOne({ _id: req.params.id, isDeleted: false });
+
+  if (!comment) {
+    throw new ApiError(404, "Comment not found.");
+  }
+
+  await ensureTaskAccess(req.user, comment.taskId);
+
+  const emoji = String(req.body.emoji || "").trim();
+  if (!supportedReactions.has(emoji)) {
+    throw new ApiError(400, "Reaction is not supported.");
+  }
+
+  const existingReactionIndex = comment.reactions.findIndex(
+    (reaction) => reaction.userId.toString() === req.user._id.toString() && reaction.emoji === emoji
+  );
+
+  if (existingReactionIndex >= 0) {
+    comment.reactions.splice(existingReactionIndex, 1);
+  } else {
+    comment.reactions.push({ emoji, userId: req.user._id });
+  }
+
+  await comment.save();
+  await comment.populate(commentPopulate);
+
+  res.json({
+    success: true,
+    message: "Reaction updated successfully.",
     data: comment
   });
 });
@@ -149,5 +235,6 @@ module.exports = {
   listCommentsByTask,
   createComment,
   updateComment,
-  softDeleteComment
+  softDeleteComment,
+  toggleReaction
 };

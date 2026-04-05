@@ -61,7 +61,7 @@ export default function AdminTasksPage() {
           <div className="space-y-3" key={task._id}>
             <AdminTaskCard task={task} />
             <div className="flex gap-3">
-              <Link className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-md transition hover:shadow-lg" to={`/tasks/${task._id}`}>
+              <Link className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-md transition hover:shadow-lg" to={`/admin/tasks/${task._id}`}>
                 View detail
               </Link>
               <button

@@ -9,11 +9,12 @@ const adminLinks = [
 
 export default function AdminSidebar() {
   return (
-    <aside className="rounded-xl bg-slate-950 p-5 text-white shadow-md transition hover:shadow-lg lg:sticky lg:top-4">
+    <aside className="h-fit self-start rounded-xl bg-slate-950 p-5 text-white shadow-md transition hover:shadow-lg lg:sticky lg:top-4">
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Admin menu</p>
       <div className="mt-4 flex flex-col gap-2">
         {adminLinks.map((link) => (
           <NavLink
+            end={link.to === "/admin"}
             key={link.to}
             className={({ isActive }) =>
               `rounded-xl px-4 py-3 text-sm font-semibold transition ${

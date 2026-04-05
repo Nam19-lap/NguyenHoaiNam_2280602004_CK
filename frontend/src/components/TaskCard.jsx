@@ -1,8 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
-import { formatDate, statusTone } from "../utils/formatters.js";
+import { formatDate, getTagTextColor, statusTone } from "../utils/formatters.js";
 
 export default function TaskCard({ task }) {
+  const location = useLocation();
+  const taskPath = location.pathname.startsWith("/admin") ? `/admin/tasks/${task._id}` : `/tasks/${task._id}`;
+
   return (
     <article className="card p-5">
       <div className="flex items-start justify-between gap-3">
@@ -24,18 +27,21 @@ export default function TaskCard({ task }) {
         <div className="mt-3 flex flex-wrap gap-2">
           {task.tags.map((tag) => (
             <span
-              className="badge text-white"
+              className="badge border border-slate-200/30"
               key={tag._id}
-              style={{ backgroundColor: tag.color || "#0f172a" }}
+              style={{
+                backgroundColor: tag.color || "#0f172a",
+                color: getTagTextColor(tag.color || "#0f172a")
+              }}
             >
-              {tag.name}
+              {tag.name || "Untitled tag"}
             </span>
           ))}
         </div>
       ) : null}
       <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
         <span>Due {formatDate(task.dueDate)}</span>
-        <Link className="btn-secondary" to={`/tasks/${task._id}`}>
+        <Link className="btn-secondary" to={taskPath}>
           Open
         </Link>
       </div>
